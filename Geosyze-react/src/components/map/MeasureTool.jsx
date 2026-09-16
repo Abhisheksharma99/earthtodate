@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './MeasureTool.module.css';
 
 const ST = { IDLE: 'idle', MEASURING: 'measuring', RESULT: 'result' };
 
-export default function MeasureTool({ map, measureCancelRef, onBeforeMeasureStart }) {
+export default function MeasureTool({ map, measureCancelRef, onBeforeMeasureStart, buttonSlot }) {
   const [state, setState] = useState(ST.IDLE);
   const [tooltipMsg, setTooltipMsg] = useState('');
   const [lastLat, setLastLat] = useState(null);
@@ -19,6 +19,7 @@ export default function MeasureTool({ map, measureCancelRef, onBeforeMeasureStar
   const [rIsLine, setRIsLine] = useState(false);
   const [selectedFeat, setSelectedFeat] = useState(null);
   const [popupReady, setPopupReady] = useState(false);
+  const [tipPos, setTipPos] = useState(null);
 
   const ol = window.ol;
   const srcRef = useRef(null);
@@ -303,13 +304,28 @@ export default function MeasureTool({ map, measureCancelRef, onBeforeMeasureStar
   const fm = (v) => v >= 1000 ? `${(v / 1000).toFixed(2)} km` : `${v.toFixed(1)} m`;
   const fa = (v) => v >= 1e6 ? `${(v / 1e6).toFixed(2)} km\u00b2` : `${v.toFixed(1)} m\u00b2`;
 
+  // Park the tooltip immediately left of the ruler button, vertically centred on
+  // it. Measured rather than hard-coded, so it follows the button wherever the
+  // controls stack ends up. useLayoutEffect so it never paints at the default spot.
+  useLayoutEffect(() => {
+    if (state !== ST.MEASURING || !buttonSlot) { setTipPos(null); return; }
+    const btn = buttonSlot.querySelector('button');
+    // btn.offsetParent is the controls panel; its offsetParent is the map
+    // container, which is what the tooltip itself is positioned against.
+    const container = btn?.offsetParent?.offsetParent;
+    if (!btn || !container) return;
+    const b = btn.getBoundingClientRect();
+    const c = container.getBoundingClientRect();
+    setTipPos({ top: b.top - c.top + b.height / 2, right: c.right - b.left + 10 });
+  }, [state, buttonSlot]);
+
   const hem = (lat) => lat >= 0 ? 'N' : 'S';
   const hemlng = (lng) => lng >= 0 ? 'E' : 'W';
 
   return (
     <>
-      {/* ruler button — always visible */}
-      <div className={styles.ctrlBtn}>
+      {/* ruler button — portalled into the map controls stack */}
+      {buttonSlot && createPortal(
         <button
           className={`${styles.rulerBtn} ${state !== ST.IDLE ? styles.active : ''}`}
           onClick={() => {
@@ -322,12 +338,13 @@ export default function MeasureTool({ map, measureCancelRef, onBeforeMeasureStar
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="2" y1="20" x2="22" y2="20"/><polyline points="8 16 4 20 8 24"/><line x1="4" y1="20" x2="16" y2="8"/><polyline points="20 12 16 8 20 4"/>
           </svg>
-        </button>
-      </div>
+        </button>,
+        buttonSlot
+      )}
 
       {/* measuring tooltip */}
       {state === ST.MEASURING && (
-        <div className={styles.tooltip}>
+        <div className={styles.tooltip} style={tipPos ?? undefined}>
           <div className={styles.tooltipBody}>
             {lastLat != null ? (
               <>

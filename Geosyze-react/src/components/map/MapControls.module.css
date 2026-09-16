@@ -45,3 +45,9 @@
   background: var(--surfaceAlt, #334155);
   color: var(--text, #F8FAFC);
 }
+
+/* Portal target for the measure button — display:contents keeps the button a
+   direct flex child of the section, so it lines up with the buttons above it. */
+.measureSlot {
+  display: contents;
+}

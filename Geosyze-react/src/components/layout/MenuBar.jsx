@@ -66,7 +66,7 @@ function Dropdown({ menu, items, onAction }) {
   );
 }
 
-export default function MenuBar({ onMenuAction, satelliteActive }) {
+export default function MenuBar({ onMenuAction }) {
   const menus = [
     {
       name: 'File',
@@ -106,12 +106,6 @@ export default function MenuBar({ onMenuAction, satelliteActive }) {
         { label: 'Polygon', action: 'draw-polygon' },
         { separator: true },
         { label: 'Clear All', action: 'draw-clear' },
-      ],
-    },
-    {
-      name: 'Layers',
-      items: [
-        { label: 'Earth to Date', action: 'toggle-satellite-overlay', checked: satelliteActive },
       ],
     },
     {

@@ -5,7 +5,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3000',
+      // 127.0.0.1, not localhost: Node resolves localhost to ::1 first, so a
+      // stray IPv6-only listener on :3000 would silently swallow API calls.
+      '/api': 'http://127.0.0.1:3000',
     },
   },
   build: {

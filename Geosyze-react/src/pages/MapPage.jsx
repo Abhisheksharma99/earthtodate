@@ -5,7 +5,8 @@ import MapView from '../components/map/MapView';
 import styles from './MapPage.module.css';
 
 export default function MapPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState(null);
+  const [activeBasemap, setActiveBasemap] = useState('osm');
   const [compareMode, setCompareMode] = useState(null);
   const [satellitePanelOpen, setSatellitePanelOpen] = useState(false);
   const [satellitePanelOpen2, setSatellitePanelOpen2] = useState(false);
@@ -21,6 +22,15 @@ export default function MapPage() {
   useEffect(() => {
     setSatellitePanelOpen2(compareMode ? satellitePanelOpen : false);
   }, [compareMode, satellitePanelOpen]);
+
+  const handleSelectPanel = useCallback((id) => {
+    if (id === 'e2d') { handleToggleSatellite(); return; }
+    setActivePanel(p => (p === id ? null : id));
+  }, [handleToggleSatellite]);
+
+  const handleSelectBasemap = useCallback((id) => {
+    mapRef.current?.setBasemap(id);
+  }, []);
 
   const handleSearch = useCallback((lngLat, zoom) => {
     mapRef.current?.flyTo(lngLat, zoom);
@@ -74,9 +84,6 @@ export default function MapPage() {
       case 'export-shapefile':
         mapRef.current?.exportFeatures('shapefile');
         break;
-      case 'toggle-satellite-overlay':
-        handleToggleSatellite();
-        break;
       case 'help-about':
         alert('GEOSYZE v1.0 \u2014 GIS Intelligence Platform');
         break;
@@ -86,7 +93,7 @@ export default function MapPage() {
       default:
         break;
     }
-  }, [handleClear, handleToggleSatellite]);
+  }, [handleClear]);
 
   // Track map center for calendar API
   const handleCenterChange = useCallback((center) => {
@@ -98,9 +105,15 @@ export default function MapPage() {
 
   return (
     <div className={styles.page}>
-      <TopBar onToggleSidebar={() => setSidebarOpen((o) => !o)} onMenuAction={handleMenuAction} compareMode={compareMode} setCompareMode={setCompareMode} satelliteActive={satellitePanelOpen || satellitePanelOpen2} onSearch={handleSearch} />
+      <TopBar onMenuAction={handleMenuAction} compareMode={compareMode} setCompareMode={setCompareMode} onSearch={handleSearch} />
       <div className={styles.body}>
-        <Sidebar isOpen={sidebarOpen} />
+        <Sidebar
+          activePanel={activePanel}
+          onSelectPanel={handleSelectPanel}
+          activeBasemap={activeBasemap}
+          onSelectBasemap={handleSelectBasemap}
+          e2dActive={satellitePanelOpen || satellitePanelOpen2}
+        />
         <main className={styles.mapArea}>
           <MapView
             ref={mapRef}
@@ -111,6 +124,7 @@ export default function MapPage() {
             satellitePanelOpen2={satellitePanelOpen2}
             setSatellitePanelOpen2={setSatellitePanelOpen2}
             onCenterChange={handleCenterChange}
+            onBasemapChange={setActiveBasemap}
             center={mapCenter}
           />
         </main>

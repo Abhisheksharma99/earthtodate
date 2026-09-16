@@ -81,16 +81,6 @@ function satelliteTileLoadFunction(tile, src) {
     .finally(satRelease);
 }
 
-const BASEMAP_DEFS = [
-  // ponytail: static tile URLs for thumbnails — same tile coords across all sources gives visual comparison
-  { id: 'osm',       name: 'OSM',     thumbnail: 'https://a.tile.openstreetmap.org/3/4/2.png' },
-  { id: 'satellite', name: 'Esri',    thumbnail: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/3/4/2' },
-  { id: 'terrain',   name: 'Terrain', thumbnail: 'https://tile.opentopomap.org/3/4/2.png' },
-  { id: 'light',     name: 'CARTO',   thumbnail: 'https://a.basemaps.cartocdn.com/light_all/3/4/2.png' },
-  { id: 'streets',   name: 'Streets', thumbnail: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/3/4/2' },
-  { id: 'dark',      name: 'Dark',    thumbnail: 'https://a.basemaps.cartocdn.com/dark_all/3/4/2.png' },
-];
-
 const MapView = forwardRef(function MapView({ 
   compareMode, 
   setCompareMode, 
@@ -99,7 +89,8 @@ const MapView = forwardRef(function MapView({
   satellitePanelOpen2, 
   setSatellitePanelOpen2,
   onCenterChange,
-  center: initialCenter
+  center: initialCenter,
+  onBasemapChange
 }, ref) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -112,27 +103,15 @@ const MapView = forwardRef(function MapView({
   const [zoom, setZoom] = useState('Zoom: \u2014');
   const [resolution, setResolution] = useState('Res: \u2014');
   const [activeBasemap, setActiveBasemap] = useState('osm');
-  const [switcherOpen, setSwitcherOpen] = useState(false);
+  // DOM node inside the MapControls stack that MeasureTool portals its button into
+  const [measureSlot, setMeasureSlot] = useState(null);
   const [drawType, setDrawType] = useState(null);
   const [pillExportOpen, setPillExportOpen] = useState(false);
   const [satCategory, setSatCategory] = useState('visual');
   const cancelMeasureRef = useRef(null);
-  const switcherRef = useRef(null);
   const satelliteLayerRef = useRef(null);
   const satelliteLayerRef2 = useRef(null);
   const map2Ref = useRef(null);
-
-  // Close switcher on outside click
-  useEffect(() => {
-    if (!switcherOpen) return;
-    function handleClick(e) {
-      if (switcherRef.current && !switcherRef.current.contains(e.target)) {
-        setSwitcherOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [switcherOpen]);
 
   useEffect(() => {
     const ol = window.ol;
@@ -250,8 +229,8 @@ const MapView = forwardRef(function MapView({
     layers.forEach((l) => l.setVisible(false));
     if (basemapRefs.current[val]) basemapRefs.current[val].setVisible(true);
     setActiveBasemap(val);
-    setSwitcherOpen(false);
-  }, []);
+    onBasemapChange?.(val);
+  }, [onBasemapChange]);
 
   // Cancel any active draw (called by MeasureTool before starting)
   const handleBeforeMeasureStart = useCallback(() => {
@@ -694,8 +673,8 @@ const MapView = forwardRef(function MapView({
     <div className={containerClass}>
       <div ref={mapRef} className={styles.map}></div>
       <MapOverlay coords={coords} zoom={zoom} resolution={resolution} docked={satellitePanelOpen} />
-      {mapReady && <MeasureTool map={mapInstance.current} measureCancelRef={cancelMeasureRef} onBeforeMeasureStart={handleBeforeMeasureStart} />}
-      {mapReady && <MapControls map={mapInstance.current} />}
+      {mapReady && <MeasureTool map={mapInstance.current} measureCancelRef={cancelMeasureRef} onBeforeMeasureStart={handleBeforeMeasureStart} buttonSlot={measureSlot} />}
+      {mapReady && <MapControls map={mapInstance.current} measureSlotRef={setMeasureSlot} />}
       {mapReady && (
         <MapCompare
           map={mapInstance.current}
@@ -753,40 +732,6 @@ const MapView = forwardRef(function MapView({
         />
       )}
       {compareMode && satellitePanelOpen2 && <SatelliteLegend viewtype={satelliteStateRef2.current.viewtype} right />}
-      {mapReady && !compareMode && (() => {
-        const currentBm = BASEMAP_DEFS.find(b => b.id === activeBasemap);
-        return (
-          <div className={styles.switcherWrapper} ref={switcherRef}>
-            {switcherOpen ? (
-              <div className={styles.gallery}>
-                {BASEMAP_DEFS.map(bm => (
-                  <button
-                    key={bm.id}
-                    className={`${styles.thumb} ${activeBasemap === bm.id ? styles.thumbActive : ''}`}
-                    onClick={() => switchBasemap(bm.id)}
-                    title={bm.name}
-                    style={{ backgroundImage: `url(${bm.thumbnail})` }}
-                  >
-                    <span className={styles.thumbLabel}>{bm.name}</span>
-                    {activeBasemap === bm.id && <span className={styles.thumbCheck}>✓</span>}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <button className={styles.compactBtn} onClick={() => setSwitcherOpen(true)} title="Switch basemap">
-                <span className={styles.compactThumb} style={{ backgroundImage: `url(${currentBm?.thumbnail})` }} />
-                <span className={styles.compactLabel}>{currentBm?.name}</span>
-                <svg className={styles.compactIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-                  <polyline points="2 17 12 22 22 17"/>
-                  <polyline points="2 12 12 17 22 12"/>
-                </svg>
-              </button>
-            )}
-          </div>
-        );
-      })()}
-
     </div>
   );
 });
