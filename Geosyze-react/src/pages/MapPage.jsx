@@ -4,18 +4,17 @@ import Sidebar from '../components/layout/Sidebar';
 import MapView from '../components/map/MapView';
 import styles from './MapPage.module.css';
 
+const SAT_CATEGORY = { e2d: 'visual', ai: 'ai', analytics: 'analytics' };
+
 export default function MapPage() {
   const [activePanel, setActivePanel] = useState(null);
   const [activeBasemap, setActiveBasemap] = useState('osm');
+  const [satCategory, setSatCategory] = useState('visual');
   const [compareMode, setCompareMode] = useState(null);
   const [satellitePanelOpen, setSatellitePanelOpen] = useState(false);
   const [satellitePanelOpen2, setSatellitePanelOpen2] = useState(false);
   const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lon: 78.9629 });
   const mapRef = useRef(null);
-
-  const handleToggleSatellite = useCallback(() => {
-    setSatellitePanelOpen(o => !o);
-  }, []);
 
   // Panel 2 only exists alongside the second map (compare mode): mirror panel 1
   // there, and stay off otherwise.
@@ -23,10 +22,23 @@ export default function MapPage() {
     setSatellitePanelOpen2(compareMode ? satellitePanelOpen : false);
   }, [compareMode, satellitePanelOpen]);
 
+  // Earth to Date, AI and Analytics are the three satellite product categories.
+  // They switch the satellite layer rather than opening a side panel; clicking
+  // the one that's already showing turns Earth to Date off.
   const handleSelectPanel = useCallback((id) => {
-    if (id === 'e2d') { handleToggleSatellite(); return; }
+    const cat = SAT_CATEGORY[id];
+    if (cat) {
+      if (satellitePanelOpen && satCategory === cat) {
+        setSatellitePanelOpen(false);
+        return;
+      }
+      setSatCategory(cat);
+      setSatellitePanelOpen(true);
+      setActivePanel(null);
+      return;
+    }
     setActivePanel(p => (p === id ? null : id));
-  }, [handleToggleSatellite]);
+  }, [satellitePanelOpen, satCategory]);
 
   const handleSelectBasemap = useCallback((id) => {
     mapRef.current?.setBasemap(id);
@@ -112,7 +124,8 @@ export default function MapPage() {
           onSelectPanel={handleSelectPanel}
           activeBasemap={activeBasemap}
           onSelectBasemap={handleSelectBasemap}
-          e2dActive={satellitePanelOpen || satellitePanelOpen2}
+          satelliteOpen={satellitePanelOpen || satellitePanelOpen2}
+          satCategory={satCategory}
         />
         <main className={styles.mapArea}>
           <MapView
@@ -125,6 +138,8 @@ export default function MapPage() {
             setSatellitePanelOpen2={setSatellitePanelOpen2}
             onCenterChange={handleCenterChange}
             onBasemapChange={setActiveBasemap}
+            satCategory={satCategory}
+            onSatCategoryChange={setSatCategory}
             center={mapCenter}
           />
         </main>

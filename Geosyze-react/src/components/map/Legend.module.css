@@ -13,10 +13,6 @@
   pointer-events: none;
 }
 
-.docked {
-  left: 64px;
-}
-
 .right {
   left: auto;
   right: 5px;

@@ -1,7 +1,7 @@
 import useElevation from '../../hooks/useElevation';
 import styles from './MapOverlay.module.css';
 
-export default function MapOverlay({ coords, zoom, resolution, docked }) {
+export default function MapOverlay({ coords, zoom, resolution }) {
   let lat = null, lon = null;
   if (coords) {
     const parts = coords.match(/Lon:\s*([\d.-]+).*Lat:\s*([\d.-]+)/);
@@ -17,7 +17,7 @@ export default function MapOverlay({ coords, zoom, resolution, docked }) {
   const displayLat = lat != null ? `${lat.toFixed(4)}\u00b0` : '\u2014';
 
   return (
-    <div className={`${styles.overlay} ${docked ? styles.docked : ''}`}>
+    <div className={styles.overlay}>
       <span className={styles.coords}>
         Lon: {displayLon}
         <span className={styles.gap} />

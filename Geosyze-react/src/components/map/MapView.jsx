@@ -90,7 +90,9 @@ const MapView = forwardRef(function MapView({
   setSatellitePanelOpen2,
   onCenterChange,
   center: initialCenter,
-  onBasemapChange
+  onBasemapChange,
+  satCategory,
+  onSatCategoryChange
 }, ref) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -107,7 +109,6 @@ const MapView = forwardRef(function MapView({
   const [measureSlot, setMeasureSlot] = useState(null);
   const [drawType, setDrawType] = useState(null);
   const [pillExportOpen, setPillExportOpen] = useState(false);
-  const [satCategory, setSatCategory] = useState('visual');
   const cancelMeasureRef = useRef(null);
   const satelliteLayerRef = useRef(null);
   const satelliteLayerRef2 = useRef(null);
@@ -665,14 +666,13 @@ const MapView = forwardRef(function MapView({
   }, [compareMode]);
 
   let containerClass = styles.container;
-  if (satellitePanelOpen && !compareMode) containerClass += ` ${styles.satelliteOpen}`;
   if (compareMode === 'compare') containerClass += ` ${styles.compareActive}`;
   else if (compareMode === 'swipe') containerClass += ` ${styles.compareActive} ${styles.compareSwipeMode}`;
 
   return (
     <div className={containerClass}>
       <div ref={mapRef} className={styles.map}></div>
-      <MapOverlay coords={coords} zoom={zoom} resolution={resolution} docked={satellitePanelOpen} />
+      <MapOverlay coords={coords} zoom={zoom} resolution={resolution} />
       {mapReady && <MeasureTool map={mapInstance.current} measureCancelRef={cancelMeasureRef} onBeforeMeasureStart={handleBeforeMeasureStart} buttonSlot={measureSlot} />}
       {mapReady && <MapControls map={mapInstance.current} measureSlotRef={setMeasureSlot} />}
       {mapReady && (
@@ -717,9 +717,9 @@ const MapView = forwardRef(function MapView({
         lat={center?.lat ?? 20.5937}
         lon={center?.lon ?? 78.9629}
         category={satCategory}
-        onCategoryChange={setSatCategory}
+        onCategoryChange={onSatCategoryChange}
       />
-      {satellitePanelOpen && <SatelliteLegend viewtype={satelliteStateRef.current.viewtype} docked />}
+      {satellitePanelOpen && <SatelliteLegend viewtype={satelliteStateRef.current.viewtype} />}
       {compareMode && (
         <SatellitePanel
           open={satellitePanelOpen2}
@@ -728,7 +728,7 @@ const MapView = forwardRef(function MapView({
           lat={center?.lat ?? 20.5937}
           lon={center?.lon ?? 78.9629}
           category={satCategory}
-          onCategoryChange={setSatCategory}
+          onCategoryChange={onSatCategoryChange}
         />
       )}
       {compareMode && satellitePanelOpen2 && <SatelliteLegend viewtype={satelliteStateRef2.current.viewtype} right />}

@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import SearchPanel from '../search/SearchPanel';
 import { BASEMAP_DEFS } from '../map/basemaps';
+import { CATEGORY_ICONS } from '../map/satelliteCategories';
 import styles from './Sidebar.module.css';
 
 const ICON = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' };
 
-// Rail order matches the order the client listed them.
+// Rail order matches the order the client listed them. Earth to Date, AI and
+// Analytics are the three Earth to Date product categories: they used to sit in
+// a second icon rail of their own, and are now first-class rail entries.
 const RAIL_ITEMS = [
   {
-    id: 'search', label: 'Search',
+    id: 'search', label: 'Search', hidden: true,
     icon: <svg {...ICON}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
   },
   {
@@ -29,7 +32,11 @@ const RAIL_ITEMS = [
   },
   {
     id: 'ai', label: 'AI',
-    icon: <svg {...ICON}><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="M18 16l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></svg>,
+    icon: CATEGORY_ICONS.ai,
+  },
+  {
+    id: 'analytics', label: 'Analytics',
+    icon: CATEGORY_ICONS.analytics,
   },
   {
     id: 'blacksky', label: 'BlackSky',
@@ -141,7 +148,11 @@ function PlaceholderPanel({ note }) {
   );
 }
 
-export default function Sidebar({ activePanel, onSelectPanel, activeBasemap, onSelectBasemap, e2dActive }) {
+// Earth to Date categories: these switch the satellite layer instead of opening
+// a side panel.
+const SAT_CATEGORY = { e2d: 'visual', ai: 'ai', analytics: 'analytics' };
+
+export default function Sidebar({ activePanel, onSelectPanel, activeBasemap, onSelectBasemap, satelliteOpen, satCategory }) {
   const item = RAIL_ITEMS.find(i => i.id === activePanel);
 
   function renderPanel() {
@@ -154,8 +165,6 @@ export default function Sidebar({ activePanel, onSelectPanel, activeBasemap, onS
         return <PlaceholderPanel note="EarthDaily imagery is not connected yet. This panel is reserved for the EarthDaily catalogue and ordering flow." />;
       case 'archive':
         return <PlaceholderPanel note="Archive search against the Maxar Geospatial Platform (MGP Pro) is not connected yet." />;
-      case 'ai':
-        return <PlaceholderPanel note="AI assistance is not connected yet. This panel is reserved for the AI feature." />;
       case 'vantor':
         return <PlaceholderPanel note="Vantor (formerly Maxar) tasking and related APIs are not connected yet. Credentials and endpoint details are pending." />;
       default:
@@ -168,8 +177,11 @@ export default function Sidebar({ activePanel, onSelectPanel, activeBasemap, onS
   return (
     <div className={styles.sidebar}>
       <nav className={styles.rail}>
-        {RAIL_ITEMS.map(railItem => {
-          const active = railItem.id === 'e2d' ? e2dActive : activePanel === railItem.id;
+        {RAIL_ITEMS.filter(r => !r.hidden).map(railItem => {
+          const cat = SAT_CATEGORY[railItem.id];
+          const active = cat
+            ? satelliteOpen && satCategory === cat
+            : activePanel === railItem.id;
           return (
             <button
               key={railItem.id}
