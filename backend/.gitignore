@@ -1,0 +1,7 @@
+node_modules/
+dist/
+public/
+database.sqlite
+uploads/
+.env
+*.log
